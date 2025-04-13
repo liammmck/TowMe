@@ -40,6 +40,13 @@ import {
   Star,
   AlertCircle,
 } from "lucide-react";
+import {
+  GoogleMap,
+  LoadScript,
+  Marker,
+  GoogleMapProps,
+} from "@react-google-maps/api";
+
 
 interface Job {
   id: string;
@@ -60,6 +67,7 @@ const DriverBiddingInterface = () => {
   const [bidDialogOpen, setBidDialogOpen] = useState(false);
   const [filter, setFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [isMapLoading, setIsMapLoading] = useState(true);
 
   // Mock data for jobs
   const jobs: Job[] = [
@@ -148,18 +156,31 @@ const DriverBiddingInterface = () => {
     });
   };
 
-  const getUrgencyColor = (urgency: "low" | "medium" | "high") => {
-    switch (urgency) {
-      case "high":
-        return "destructive";
-      case "medium":
-        return "default";
-      case "low":
-        return "secondary";
-      default:
-        return "default";
-    }
-  };
+   const mapContainerStyle = {
+     width: "100%",
+     height: "500px",
+   };
+
+   const mapCenter = {
+     lat: 34.0522, // Los Angeles latitude (mock)
+     lng: -118.2437, // Los Angeles longitude (mock)
+   };
+
+  // Replace with actual API key
+   const googleMapsApiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "";
+
+   const handleMapLoad = () => {
+     setIsMapLoading(false);
+   };
+
+   const mapOptions: GoogleMapProps["options"] = {
+     mapId: "404a1371297c56ca",
+     disableDefaultUI: true,
+     zoomControl: true,
+   };
+
+   const [mapError, setMapError] = useState<string | null>(null);
+
 
   return (
     <div className="bg-background min-h-screen p-4 md:p-6">
@@ -229,16 +250,13 @@ const DriverBiddingInterface = () => {
                           {job.distance} • {job.estimatedDuration} estimated
                         </CardDescription>
                       </div>
-                      {job.urgency === "high" ? (
-                        <Badge className="bg-yellow-500 text-yellow-900">
-                          High Urgency
-                        </Badge>
-                      ) : (
-                        <Badge variant={getUrgencyColor(job.urgency)}>
+                      <Badge variant={job.urgency === "high" ? "success" : job.urgency === "medium" ? "default" : "secondary"}>
+                          {job.urgency.charAt(0).toUpperCase() +
+                            job.urgency.slice(1)} Urgency
+                        ) : (
                           {job.urgency.charAt(0).toUpperCase() +
                             job.urgency.slice(1)} Urgency
                         </Badge>
-                      )}
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -307,12 +325,64 @@ const DriverBiddingInterface = () => {
             value="map"
             className="h-[500px] rounded-md border border-border bg-muted flex items-center justify-center"
           >
-            <div className="text-center">
-              <p className="text-lg font-medium">Map View</p>
-              <p className="text-muted-foreground">
-                Map integration would be implemented here
-              </p>
-            </div>
+            {googleMapsApiKey ? (
+              <LoadScript
+                googleMapsApiKey={googleMapsApiKey}
+                libraries={["places"]}
+              >
+                {isMapLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-muted/80">
+                    <p>Loading Map...</p>
+                  </div>
+                )}
+                {mapError ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-muted/80">
+                    <p className="text-red-500">
+                      Error loading map: {mapError}
+                    </p>
+                  </div>
+                ) : null}
+                <GoogleMap
+                  mapContainerStyle={mapContainerStyle}
+                  center={mapCenter}
+                  zoom={10}
+                  options={mapOptions}
+                  onLoad={handleMapLoad}
+                  onError={(error) => {
+                    setIsMapLoading(false);
+                    setMapError(error.message || "Unknown error");
+                  }}
+                >
+                  {filteredJobs.map((job) => (
+                    <React.Fragment key={job.id}>
+                      <Marker
+                        position={{
+                          lat: 34.0522,
+                          lng: -118.2437,
+                        }}
+                        label="P"
+                        title={`Pickup: ${job.pickupLocation}`}
+                      />
+                      <Marker
+                        position={{
+                          lat: 34.0522,
+                          lng: -118.2437,
+                        }}
+                        label="D"
+                        title={`Dropoff: ${job.dropoffLocation}`}
+                      />
+                    </React.Fragment>
+                  ))}
+                </GoogleMap>
+              </LoadScript>
+            ) : (
+              <div className="flex items-center justify-center w-full h-full">
+                <p className="text-red-500">
+                  Google Maps API key is not set. Please set the
+                  REACT_APP_GOOGLE_MAPS_API_KEY environment variable.
+                </p>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
 
