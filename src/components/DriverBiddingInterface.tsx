@@ -229,11 +229,16 @@ const DriverBiddingInterface = () => {
                           {job.distance} • {job.estimatedDuration} estimated
                         </CardDescription>
                       </div>
-                      <Badge variant={getUrgencyColor(job.urgency)}>
-                        {job.urgency.charAt(0).toUpperCase() +
-                          job.urgency.slice(1)}{" "}
-                        Urgency
-                      </Badge>
+                      {job.urgency === "high" ? (
+                        <Badge className="bg-yellow-500 text-yellow-900">
+                          High Urgency
+                        </Badge>
+                      ) : (
+                        <Badge variant={getUrgencyColor(job.urgency)}>
+                          {job.urgency.charAt(0).toUpperCase() +
+                            job.urgency.slice(1)} Urgency
+                        </Badge>
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent>
